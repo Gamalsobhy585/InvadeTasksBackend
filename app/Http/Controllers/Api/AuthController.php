@@ -18,27 +18,27 @@ class AuthController extends Controller
             'password' => 'required|regex:/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/',
             'password_confirmation' => 'required|same:password',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json([
                 'status' => 422,
                 'errors' => $validator->messages(),
             ], 422);
         }
-
+    
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
-
+    
         $token = $user->createToken($user->email.'_Token')->plainTextToken;
-
+    
         return response()->json([
             'status' => 200,
             'userName' => $user->name,
             'token' => $token,
-            'message' => 'Registered Successfully',
+            'message' => 'Registration successful',  
         ]);
     }
 
