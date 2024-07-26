@@ -1,1 +1,247 @@
  "token": "1|UaAiY8MPZrpZifxYzLpKCcOgajvZ93HNxajyrRbc22c74f87",
+
+
+
+ <?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Task;
+use Illuminate\Http\Request;
+use App\Http\Resources\TaskResource;
+use App\Http\Resources\TaskCollection;
+use Illuminate\Auth\Access\Gate;
+ 
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+
+class TaskController extends Controller
+{
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+        $perPage = $request->get('per_page', 5);
+        $tasks = Task::where('user_id', $user->id)
+                     ->select('id', 'title', 'description', 'status', 'due_date', 'category_id')
+                     ->with('category')
+                     ->orderBy('id', 'asc')
+                     ->paginate($perPage);
+
+        return new TaskCollection($tasks);
+    }
+
+    public function show($id)
+    {
+        $task = Task::findOrFail($id);
+
+        Gate::authorize('view', $task);
+
+        return new TaskResource($task);
+    }
+
+    public function store(Request $request)
+    {
+        Log::info('Store Task Request:', $request->all());
+
+        $validatedData = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'status' => 'required|string|in:pending,completed',
+            'due_date' => 'nullable|date',
+            'category_id' => 'required|exists:categories,id',
+        ]);
+
+        Gate::authorize('create', Task::class);
+
+        $task = Task::create($validatedData);
+        Log::info('Task Created:', $task->toArray());
+
+        return new TaskResource($task->load('category', 'user'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $task = Task::findOrFail($id);
+
+        Gate::authorize('update', $task);
+
+        $validatedData = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'status' => 'required|string|in:pending,completed',
+            'due_date' => 'nullable|date',
+            'category_id' => 'required|exists:categories,id',
+        ]);
+
+        $task->update($validatedData);
+
+        return new TaskResource($task->load('category', 'user'));
+    }
+
+    public function destroy($id)
+    {
+        $task = Task::findOrFail($id);
+
+        Gate::authorize('delete', $task);
+
+        $task->delete();
+
+        return response()->json(['message' => 'Task deleted successfully']);
+    }
+
+    public function restore($id)
+    {
+        $task = Task::onlyTrashed()->findOrFail($id);
+
+        Gate::authorize('restore', $task);
+
+        $task->restore();
+        return new TaskResource($task->load('category'));
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Task;
+use Illuminate\Http\Request;
+use App\Http\Resources\TaskResource;
+use App\Http\Resources\TaskCollection;
+use Illuminate\Auth\Access\Gate;
+ 
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+
+class TaskController extends Controller
+{
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+        $perPage = $request->get('per_page', 5);
+        $tasks = Task::where('user_id', $user->id)
+                     ->select('id', 'title', 'description', 'status', 'due_date', 'category_id')
+                     ->with('category')
+                     ->orderBy('id', 'asc')
+                     ->paginate($perPage);
+
+        return new TaskCollection($tasks);
+    }
+
+    public function show($id)
+    {
+        $task = Task::findOrFail($id);
+
+        Gate::authorize('view', $task);
+
+        return new TaskResource($task);
+    }
+
+    public function store(Request $request)
+    {
+        Log::info('Store Task Request:', $request->all());
+
+        $validatedData = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'status' => 'required|string|in:pending,completed',
+            'due_date' => 'nullable|date',
+            'category_id' => 'required|exists:categories,id',
+        ]);
+
+        Gate::authorize('create', Task::class);
+
+        $task = Task::create($validatedData);
+        Log::info('Task Created:', $task->toArray());
+
+        return new TaskResource($task->load('category', 'user'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $task = Task::findOrFail($id);
+
+      
+
+        $validatedData = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'status' => 'required|string|in:pending,completed',
+            'due_date' => 'nullable|date',
+            'category_id' => 'required|exists:categories,id',
+        ]);
+
+        $task->update($validatedData);
+        Gate::authorize('update', $task);
+        return new TaskResource($task->load('category', 'user'));
+    }
+
+    public function destroy($id)
+    {
+        $task = Task::findOrFail($id);
+
+
+        Gate::authorize('delete', $task);
+        $task->delete();
+
+
+        return response()->json(['message' => 'Task deleted successfully']);
+    }
+
+    public function restore($id)
+    {
+        $task = Task::onlyTrashed()->findOrFail($id);
+
+        Gate::authorize('restore', $task);
+
+        $task->restore();
+        return new TaskResource($task->load('category'));
+    }
+}
+
+
+
+
+
+
+
+
+
+
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Resources\CategoryCollection;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Category;
+use Illuminate\Support\Facades\Gate;
+
+class CategoryController extends Controller
+{
+    public function index()
+    {
+        Gate::authorize('viewAny', Category::class);
+
+        $categories = Category::all();
+        return new CategoryCollection($categories);
+    }
+}
